@@ -67,3 +67,18 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# --- Reglas Especificas del Simulador Biot-Savart ---
+
+# Directorios de compilacion generados por CMake
+/build/
+/out/
+/bin/
+
+# Configuraciones locales de editores
+.vscode/
+.cache/
+
+# Archivos de datos generados por el modulo I2 (Geometria)
+/data/*.csv
+/data/*.json
