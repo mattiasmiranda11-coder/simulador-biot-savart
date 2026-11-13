@@ -3,7 +3,9 @@ contra la formula exacta, usando cada vez mas segmentos*/
 #include <iostream>
 #include <vector>
 #include <cmath>
-
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include "biot_savart.hpp"   /*Freddy*/
 #include "EspiraCircular.hpp"  /*Matty*/
 
@@ -41,7 +43,7 @@ private:
 BenchmarkEspira::BenchmarkEspira(double i_radio, double i_corriente)
     : radio(i_radio),
     corriente(i_corriente),
-    mu0(4.0 * 3.14159265358979 * 0.0000001),
+    mu0(4.0 * M_PI * 0.0000001),
     tolerancia(0.0001),
     pasoSimetria(false),
     pasoConvergencia(false),
