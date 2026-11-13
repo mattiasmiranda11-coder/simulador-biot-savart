@@ -1,15 +1,11 @@
-// tests/test_espira.cpp - MagneSim, Hito 1, T2.2.1 (Benjamin)
-// Compara el campo B de una espira circular, calculado con el codigo del equipo,
-// contra la formula exacta, usando cada vez mas segmentos.
-// No modifica nada de src/.
-
+/* Compara el campo de una espira circular, calculado con el codigo del equipo,
+contra la formula exacta, usando cada vez mas segmentos*/
 #include <iostream>
 #include <vector>
 #include <cmath>
 
-#include "Vector3D.hpp"          // Freddy
-#include "EspiraCircular.hpp"    // Mattias
-#include "BiotSavartSolver.hpp"  // Freddy
+#include "biot_savart.hpp"   /*Freddy*/
+#include "EspiraCircular.hpp"  /*Matty*/
 
 using namespace std;
 
@@ -17,7 +13,7 @@ class BenchmarkEspira {
 public:
     BenchmarkEspira(double i_radio, double i_corriente);
     bool ejecutar();
-
+    
 private:
     double radio;
     double corriente;
@@ -30,10 +26,11 @@ private:
     bool pasoConvergencia;
     bool pasoCentro;
     bool pasoEje;
-
+    
     double campoExactoCentro();
     double campoExactoEje(double z);
-    Vector3D calcularBNumerico(int nSegmentos, Vector3D punto);
+    vector<magnesim::Segmento> generarEspira(int nSegmentos);
+    magnesim::Vec3 calcularBNumerico(int nSegmentos, magnesim::Vec3 punto);
     double absoluto(double x);
     double errorRelativo(double numerico, double exacto);
     void verificarCentro();
@@ -43,44 +40,67 @@ private:
 
 BenchmarkEspira::BenchmarkEspira(double i_radio, double i_corriente)
     : radio(i_radio),
-      corriente(i_corriente),
-      mu0(4.0 * 3.14159265358979 * 0.0000001),
-      tolerancia(0.0001),
-      pasoSimetria(false),
-      pasoConvergencia(false),
-      pasoCentro(false),
-      pasoEje(false) {
-
+    corriente(i_corriente),
+    mu0(4.0 * 3.14159265358979 * 0.0000001),
+    tolerancia(0.0001),
+    pasoSimetria(false),
+    pasoConvergencia(false),
+    pasoCentro(false),
+    pasoEje(false) {
     int n = 4;
     for (int i = 0; i < 9; i++) {
-        listaN.push_back(n);   // 4, 8, 16, ... 1024
+        listaN.push_back(n);  
         n = n * 2;
     }
-
+    
     alturasZ.push_back(0.5 * radio);
     alturasZ.push_back(1.0 * radio);
     alturasZ.push_back(2.0 * radio);
 }
 
-// B en el centro de la espira: mu0 * I / (2R)
+/*B en el centro de la espira*/
 double BenchmarkEspira::campoExactoCentro() {
     return mu0 * corriente / (2.0 * radio);
 }
 
-// B sobre el eje, a altura z: mu0 * I * R^2 / (2 * (R^2 + z^2)^(3/2))
+/* B sobre el eje, a cierta alturaz.*/
 double BenchmarkEspira::campoExactoEje(double z) {
     double d2 = radio * radio + z * z;
     double d3 = d2 * sqrt(d2);
     return mu0 * corriente * radio * radio / (2.0 * d3);
 }
 
-// UNICO metodo que usa las clases de Mattias y Freddy.
-// Si sus nombres o parametros cambian, solo hay que editar estas 3 lineas.
-// Supuesto: espira en el plano XY, centrada en el origen, corriente antihoraria (B en +z).
-Vector3D BenchmarkEspira::calcularBNumerico(int nSegmentos, Vector3D punto) {
-    EspiraCircular espira(radio, corriente, nSegmentos);
-    BiotSavartSolver solver;
-    return solver.calcularCampo(espira, punto);
+/* pidelos segmentos a EspiraCircular de Mattias y los convierte al formato del solver de Freddy*/
+vector<magnesim::Segmento> BenchmarkEspira::generarEspira(int nSegmentos) {
+    EspiraCircular espira(corriente, radio, nSegmentos);
+    vector<Segmento> segmentos = espira.generarSegmentos(nSegmentos);
+    
+    vector<magnesim::Segmento> lista;
+    for (size_t i = 0; i < segmentos.size(); i++) {
+        magnesim::Segmento seg;
+        seg.inicio = {segmentos[i].centro.x - 0.5 * segmentos[i].dl.x,
+                      segmentos[i].centro.y - 0.5 * segmentos[i].dl.y,
+                      segmentos[i].centro.z - 0.5 * segmentos[i].dl.z};
+        seg.fin = {segmentos[i].centro.x + 0.5 * segmentos[i].dl.x,
+                   segmentos[i].centro.y + 0.5 * segmentos[i].dl.y,
+                   segmentos[i].centro.z + 0.5 * segmentos[i].dl.z};
+        lista.push_back(seg);
+    }
+    return lista;
+}
+
+/* unico metodo que usa el solver de Freddy.
+calcular_campo devuelve un "optional": si el punt esta demasiado cerca del conductor
+(muestra excluida) viene vacio, y aqui lo avisamos y devolvemos cero*/
+magnesim::Vec3 BenchmarkEspira::calcularBNumerico(int nSegmentos, magnesim::Vec3 punto) {
+    vector<magnesim::Segmento> tramos = generarEspira(nSegmentos);
+    std::optional<magnesim::Vec3> resultado = magnesim::calcular_campo(tramos, corriente, punto);
+    if (!resultado.has_value()) {
+        cout << "AVISO: punto excluido por el solver (muy cerca del conductor)" << endl;
+        magnesim::Vec3 cero = {0.0, 0.0, 0.0};
+        return cero;
+    }
+    return resultado.value();
 }
 
 double BenchmarkEspira::absoluto(double x) {
@@ -98,38 +118,42 @@ void BenchmarkEspira::verificarCentro() {
     cout << "--- 1) Campo en el centro de la espira ---" << endl;
     double exacto = campoExactoCentro();
     cout << "B exacto = mu0*I/(2R) = " << exacto << " T" << endl;
-
-    Vector3D origen(0.0, 0.0, 0.0);
+    
+    magnesim::Vec3 origen = {0.0, 0.0, 0.0};
     int total = listaN.size();
     pasoSimetria = true;
     erroresCentro.clear();
-
+    
     for (int i = 0; i < total; i++) {
         int n = listaN[i];
-        Vector3D B = calcularBNumerico(n, origen);
+        magnesim::Vec3 B = calcularBNumerico(n, origen);
         double err = errorRelativo(B.z, exacto);
         erroresCentro.push_back(err);
-
+        
         cout << "N = " << n << "   B = " << B.z << " T   error = " << err;
         if (i > 0) {
-            // si el codigo esta bien, al doblar N este cociente se acerca a 4
-            cout << "   (error anterior / error = " << erroresCentro[i - 1] / err << ")";
+            if (err > 0.000000000001) {
+                cout << "   (error anterior / error = " << erroresCentro[i - 1] / err << ")";
+            } else {
+                cout << "   (error de redondeo, ya es exacto)";
+            }
         }
         cout << endl;
-
-        // en el centro, Bx y By deben ser ~0 por simetria
+        
+        /*en el centro, Bx y By deben ser 0 o casi 0 por simetria*/
         if (absoluto(B.x) > 0.000000001 * exacto || absoluto(B.y) > 0.000000001 * exacto) {
             pasoSimetria = false;
         }
     }
-
+    
     pasoConvergencia = true;
     for (int i = 1; i < total; i++) {
-        if (erroresCentro[i] > erroresCentro[i - 1]) {
+        /* el error debe bajar; si ya es del tamano del redondeo (< 1e-12) se acepta*/
+        if (erroresCentro[i] > erroresCentro[i - 1] && erroresCentro[i] > 0.000000000001) {
             pasoConvergencia = false;
         }
     }
-
+    
     pasoCentro = (erroresCentro[total - 1] < tolerancia);
 }
 
@@ -137,16 +161,17 @@ void BenchmarkEspira::verificarEje() {
     cout << endl << "--- 2) Campo sobre el eje de la espira (N mas fino) ---" << endl;
     int nFino = listaN[listaN.size() - 1];
     pasoEje = true;
-
+    
     for (int i = 0; i < 3; i++) {
         double z = alturasZ[i];
         double exacto = campoExactoEje(z);
-        Vector3D B = calcularBNumerico(nFino, Vector3D(0.0, 0.0, z));
+        magnesim::Vec3 punto = {0.0, 0.0, z};
+        magnesim::Vec3 B = calcularBNumerico(nFino, punto);
         double err = errorRelativo(B.z, exacto);
-
+        
         cout << "z = " << z << " m   exacto = " << exacto << " T   numerico = " << B.z
              << " T   error = " << err << endl;
-
+        
         if (err >= tolerancia) {
             pasoEje = false;
         }
@@ -168,11 +193,11 @@ void BenchmarkEspira::mostrarResumen() {
 bool BenchmarkEspira::ejecutar() {
     cout << "MagneSim - Benchmark de espira circular (T2.2.1)" << endl;
     cout << "R = " << radio << " m, I = " << corriente << " A" << endl << endl;
-
+    
     verificarCentro();
     verificarEje();
     mostrarResumen();
-
+    
     bool todoOk = pasoSimetria && pasoConvergencia && pasoCentro && pasoEje;
     cout << endl;
     if (todoOk) {
@@ -184,7 +209,7 @@ bool BenchmarkEspira::ejecutar() {
 }
 
 int main() {
-    BenchmarkEspira benchmark(0.10, 1.0);   // R = 10 cm, I = 1 A
+    BenchmarkEspira benchmark(0.10, 1.0); /*asigno radio=0,1m y 1 A de corriente*/
     bool ok = benchmark.ejecutar();
     if (ok) {
         return 0;
