@@ -1,27 +1,27 @@
 MagneSim - Benchmark de espira circular (T2.2.1)
 R = 0.1 m, I = 1 A
-
+ 
 --- 1) Campo en el centro de la espira ---
 B exacto = mu0*I/(2R) = 6.28319e-06 T
-N = 4   B = 6.28319e-06 T   error = 6.74047e-16
-N = 8   B = 6.28319e-06 T   error = 8.08857e-16   (error de redondeo, ya es exacto)
-N = 16   B = 6.28319e-06 T   error = 9.43666e-16   (error de redondeo, ya es exacto)
-N = 32   B = 6.28319e-06 T   error = 1.07848e-15   (error de redondeo, ya es exacto)
-N = 64   B = 6.28319e-06 T   error = 1.07848e-15   (error de redondeo, ya es exacto)
-N = 128   B = 6.28319e-06 T   error = 1.21329e-15   (error de redondeo, ya es exacto)
-N = 256   B = 6.28319e-06 T   error = 1.21329e-15   (error de redondeo, ya es exacto)
-N = 512   B = 6.28319e-06 T   error = 5.93162e-15   (error de redondeo, ya es exacto)
-N = 1024   B = 6.28319e-06 T   error = 1.07848e-14   (error de redondeo, ya es exacto)
-
+N = 4   B = 6.28319e-06 T   error = 2.69619e-16
+N = 8   B = 6.28319e-06 T   error = 1.34809e-16   (error de redondeo, ya es exacto)
+N = 16   B = 6.28319e-06 T   error = 0   (error de redondeo, ya es exacto)
+N = 32   B = 6.28319e-06 T   error = 1.34809e-16   (error de redondeo, ya es exacto)
+N = 64   B = 6.28319e-06 T   error = 1.34809e-16   (error de redondeo, ya es exacto)
+N = 128   B = 6.28319e-06 T   error = 2.69619e-16   (error de redondeo, ya es exacto)
+N = 256   B = 6.28319e-06 T   error = 2.15695e-15   (error de redondeo, ya es exacto)
+N = 512   B = 6.28319e-06 T   error = 6.87528e-15   (error de redondeo, ya es exacto)
+N = 1024   B = 6.28319e-06 T   error = 1.17284e-14   (error de redondeo, ya es exacto)
+ 
 --- 2) Campo sobre el eje de la espira (N mas fino) ---
-z = 0.05 m   exacto = 4.49588e-06 T   numerico = 4.49588e-06 T   error = 1.88402e-15
+z = 0.05 m   exacto = 4.49588e-06 T   numerico = 4.49588e-06 T   error = 1.13041e-15
 z = 0.1 m   exacto = 2.22144e-06 T   numerico = 2.22144e-06 T   error = 3.81299e-16
-z = 0.2 m   exacto = 5.61985e-07 T   numerico = 5.61985e-07 T   error = 1.88402e-15
-
+z = 0.2 m   exacto = 5.61985e-07 T   numerico = 5.61985e-07 T   error = 1.13041e-15
+ 
 --- RESUMEN (tolerancia = 0.0001) ---
 Simetria en el centro (Bx, By = 0)  : PASA
 Error baja al aumentar N            : PASA
 Error en el centro < tolerancia     : PASA
 Error sobre el eje < tolerancia     : PASA
-
+ 
 RESULTADO GLOBAL: PASA
